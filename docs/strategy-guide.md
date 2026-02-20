@@ -373,6 +373,79 @@ def init(self):
 
 ---
 
+## Using the `ta` Library for Indicators
+
+The [`ta`](https://pypi.org/project/ta/) library provides ready-made technical analysis indicators built on pandas/numpy. You can use it instead of writing indicator functions from scratch.
+
+### Installation
+
+```bash
+pip install ta
+```
+
+### Usage Pattern
+
+Wrap `ta` calls in **module-level functions** (as required by `self.I()`):
+
+```python
+import pandas as pd
+import ta
+
+def _ta_rsi(close, period):
+    return ta.momentum.RSIIndicator(pd.Series(close), window=period).rsi()
+
+def _ta_ema(close, period):
+    return ta.trend.EMAIndicator(pd.Series(close), window=period).ema_indicator()
+
+def _ta_macd_line(close, fast, slow, signal):
+    return ta.trend.MACD(pd.Series(close), window_fast=fast, window_slow=slow, window_sign=signal).macd()
+
+def _ta_macd_signal(close, fast, slow, signal):
+    return ta.trend.MACD(pd.Series(close), window_fast=fast, window_slow=slow, window_sign=signal).macd_signal()
+
+def _ta_bb_upper(close, period, std_dev):
+    return ta.volatility.BollingerBands(pd.Series(close), window=period, window_dev=std_dev).bollinger_hband()
+
+def _ta_bb_lower(close, period, std_dev):
+    return ta.volatility.BollingerBands(pd.Series(close), window=period, window_dev=std_dev).bollinger_lband()
+
+
+class MyTaStrategy(Strategy):
+    rsi_period: int = 14
+    ema_period: int = 50
+
+    def init(self):
+        close = self.data.Close
+        self.rsi = self.I(_ta_rsi, close, self.rsi_period, name="RSI", overlay=False)
+        self.ema = self.I(_ta_ema, close, self.ema_period, name="EMA(50)", overlay=True)
+
+    def next(self):
+        price = self.data.Close[-1]
+        if not self.position:
+            if self.rsi[-1] < 30 and price > self.ema[-1]:
+                self.buy(sl=price * 0.97)
+        elif self.rsi[-1] > 70:
+            self.position.close()
+```
+
+### Common `ta` Modules
+
+| Module | Class | Key Method |
+|--------|-------|------------|
+| `ta.momentum` | `RSIIndicator(close, window)` | `.rsi()` |
+| `ta.trend` | `EMAIndicator(close, window)` | `.ema_indicator()` |
+| `ta.trend` | `SMAIndicator(close, window)` | `.sma_indicator()` |
+| `ta.trend` | `MACD(close, window_fast, window_slow, window_sign)` | `.macd()`, `.macd_signal()`, `.macd_diff()` |
+| `ta.volatility` | `BollingerBands(close, window, window_dev)` | `.bollinger_hband()`, `.bollinger_lband()`, `.bollinger_mavg()` |
+| `ta.volatility` | `AverageTrueRange(high, low, close, window)` | `.average_true_range()` |
+| `ta.volume` | `OnBalanceVolumeIndicator(close, volume)` | `.on_balance_volume()` |
+
+For the full list of available indicators, visit the [ta library documentation](https://technical-analysis-library-in-python.readthedocs.io/en/latest/ta.html).
+
+**Important:** Each `ta` indicator function wrapper must be at **module level** — do not define them inside the class or as lambdas.
+
+---
+
 ## Full Working Examples
 
 ### Example 1 — SMA Crossover (`strategies/sma_cross.py`)
