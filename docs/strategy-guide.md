@@ -306,7 +306,9 @@ if not self.position:
 
 ---
 
-## Common Indicator Implementations
+## Indicator Implementations
+
+### Implementations from scratch
 
 All must be **module-level functions**.
 
@@ -373,17 +375,11 @@ def init(self):
 
 ---
 
-## Using the `ta` Library for Indicators
+### Using the `ta` Library for Indicators
 
 The [`ta`](https://pypi.org/project/ta/) library provides ready-made technical analysis indicators built on pandas/numpy. You can use it instead of writing indicator functions from scratch.
 
-### Installation
-
-```bash
-pip install ta
-```
-
-### Usage Pattern
+#### Usage Pattern
 
 Wrap `ta` calls in **module-level functions** (as required by `self.I()`):
 
