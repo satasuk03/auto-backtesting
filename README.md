@@ -4,6 +4,16 @@ Backtesting engine for AI-generated crypto trading strategies on Binance data.
 
 Describe a strategy in plain English, let an LLM write the code, and get full backtest results in seconds — no data wrangling, no boilerplate, just results.
 
+## TL;DR
+
+1. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+2. Open your Claude Code
+3. Ask Claude to fetch data (e.g. `fetch data for BTCUSDT 5m, 30m, 1h, 4h, 1d. most recent data in these 3 months`)
+4. Ask Claude to create a strategy and test it (might tell Claude to keep iterating until you get the desired results)
+
 ## How it works
 
 1. **Describe** a strategy to your LLM ("Buy when MACD crosses up, sell on crossdown")
