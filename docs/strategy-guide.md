@@ -3,6 +3,10 @@
 This document is a reference for implementing trading strategies using `backtesting.py`
 in this project. Read it fully before writing any strategy code.
 
+## Rules
+
+Read this file only as a syntax guide. But you have to create your own strategy from scratch.
+
 ---
 
 ## Project Layout
@@ -16,8 +20,7 @@ back-testing-llm/
 │   ├── data_loader.py      # CSV cache layer wrapping binance_client
 │   └── run_backtest.py     # CLI entry point
 ├── strategies/             # Drop new strategy .py files here
-│   ├── sma_cross.py        # Example: SMA crossover (single TF)
-│   └── mtf_rsi_trend.py    # Example: Multi-timeframe RSI + SMA
+│   └── sma_cross.py        # Example: SMA crossover (single TF)
 └── tmp/                    # HTML chart output (auto-created, gitignored)
 ```
 
