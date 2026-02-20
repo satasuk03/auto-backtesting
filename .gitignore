@@ -1,0 +1,10 @@
+# Cached market data
+data/*.csv
+
+# HTML backtest output
+tmp/*.html
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
