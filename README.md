@@ -1,38 +1,54 @@
-# Backtesting Engine
+# Let an LLM be your quant.
 
-A command-line backtesting engine for cryptocurrency trading strategies, powered by [backtesting.py](https://kernc.github.io/backtesting.py/) and live Binance market data.
+Backtesting engine for AI-generated crypto trading strategies on Binance data.
 
-## Features
+Describe a strategy in plain English, let an LLM write the code, and get full backtest results in seconds — no data wrangling, no boilerplate, just results.
 
-- Fetch OHLCV data from Binance (no API key required)
-- CSV caching — data is downloaded once and reused on subsequent runs
-- Plug-in strategy system — drop a `.py` file in `strategies/` and run it immediately
-- Full backtesting stats: return, Sharpe ratio, max drawdown, win rate, and more
-- Optional interactive Bokeh chart (`--plot`)
+## How it works
 
-## Installation
+1. **Describe** a strategy to your LLM ("Buy when MACD crosses up, sell on crossdown")
+2. **Drop** the generated `.py` file into `strategies/`
+3. **Run** the backtest and iterate
 
-```bash
-pip install -r requirements.txt
-```
+The engine handles everything else: fetching Binance data, caching, running the simulation, and producing an interactive chart.
 
 ## Quick Start
 
 ```bash
-# Run the built-in SMA crossover strategy on BTC daily data
-python engine/run_backtest.py --symbol BTCUSDT --interval 1d --cash 100000
+pip install -r requirements.txt
 
-# Specify a date range and open the interactive chart
+# Run a strategy on BTC daily data
+python engine/run_backtest.py --symbol BTCUSDT --interval 1d --cash 100000 --strategy macd_cross
+
+# With date range and interactive chart
 python engine/run_backtest.py \
-    --symbol ETHUSDT \
+    --symbol BTCUSDT \
     --interval 4h \
-    --start-date 2023-01-01 \
+    --start-date 2021-01-01 \
     --end-date 2024-01-01 \
-    --cash 50000 \
+    --cash 100000 \
+    --strategy macd_cross \
     --plot
 ```
 
 > **Note:** Use `--cash` large enough to cover the asset price. For BTC (>$16k), use at least `--cash 20000`.
+
+## Prompting an LLM
+
+Point your LLM at `docs/strategy-guide.md` before asking it to write a strategy. It covers all the conventions the engine expects — indicator declarations, crossover helpers, stop-loss patterns, and multi-timeframe setups.
+
+Example prompt:
+> "Read docs/strategy-guide.md, then write a strategy that buys when RSI crosses above 50 and sells when it crosses below. Use a 3% stop-loss."
+
+The LLM will produce a ready-to-run file. Drop it in `strategies/` and backtest immediately.
+
+## Included Strategies
+
+| File | Description |
+|---|---|
+| `sma_cross.py` | Fast/slow SMA crossover with stop-loss |
+| `mtf_rsi_trend.py` | Multi-timeframe RSI + SMA trend filter |
+| `macd_cross.py` | MACD / signal line crossover |
 
 ## CLI Reference
 
@@ -43,67 +59,31 @@ python engine/run_backtest.py \
 | `--strategy` | `sma_cross` | Filename stem (no `.py`) of a file in `strategies/` |
 | `--cash` | `10000` | Starting capital in quote currency |
 | `--commission` | `0.001` | Per-trade fee rate (`0.001` = 0.1%) |
-| `--start-date` | None | Fetch/filter data from this date (`YYYY-MM-DD`) |
-| `--end-date` | None | Fetch/filter data up to this date (`YYYY-MM-DD`) |
+| `--start-date` | None | Filter data from this date (`YYYY-MM-DD`) |
+| `--end-date` | None | Filter data up to this date (`YYYY-MM-DD`) |
 | `--plot` | False | Open interactive Bokeh chart in browser after run |
 
 ## Project Structure
 
 ```
 back-testing-llm/
-├── requirements.txt
-├── data/                     # Cached OHLCV CSV files (auto-created)
-├── strategies/
-│   └── sma_cross.py          # SMA crossover sample strategy
-└── engine/
-    ├── binance_client.py     # Binance REST API wrapper
-    ├── data_loader.py        # Fetch + CSV cache layer
-    └── run_backtest.py       # CLI entry point
-```
-
-## Adding a New Strategy
-
-1. Create a new file in `strategies/`, e.g. `strategies/rsi_strategy.py`
-2. Define a class that inherits from `backtesting.Strategy`
-3. Implement `init()` to declare indicators and `next()` for trading logic
-4. Run it: `python engine/run_backtest.py --symbol BTCUSDT --strategy rsi_strategy`
-
-```python
-# strategies/rsi_strategy.py
-import numpy as np
-from backtesting import Strategy
-
-class RsiStrategy(Strategy):
-    rsi_period = 14
-    overbought = 70
-    oversold = 30
-
-    def init(self):
-        # declare indicators here with self.I()
-        ...
-
-    def next(self):
-        # trading logic here (self.buy(), self.sell(), self.position.close())
-        ...
+├── docs/
+│   └── strategy-guide.md     # Feed this to your LLM before prompting
+├── strategies/               # Drop generated strategy files here
+│   ├── sma_cross.py
+│   ├── mtf_rsi_trend.py
+│   └── macd_cross.py
+├── engine/
+│   ├── binance_client.py     # Binance REST API wrapper (no auth required)
+│   ├── data_loader.py        # Fetch + CSV cache layer
+│   └── run_backtest.py       # CLI entry point
+└── data/                     # Cached OHLCV CSV files (auto-created)
 ```
 
 ## Data Caching
 
-Downloaded data is saved as CSV files in `data/` (e.g. `data/BTCUSDT_1d.csv`).
-On subsequent runs with the same symbol and interval, data is loaded from disk instantly.
-To refresh the data, delete the corresponding CSV file and re-run.
+Data is fetched from Binance once and saved to `data/` (e.g. `data/BTCUSDT_1d.csv`). Subsequent runs load from disk instantly. To force a fresh fetch, delete the CSV:
 
-## Sample Strategy: SMA Cross (`strategies/sma_cross.py`)
-
-Buys when the fast SMA (20-period) crosses above the slow SMA (50-period),
-and sells on the reverse crossover. A 2% stop-loss is placed below each entry.
-
-Override default parameters via the `Backtest()` call or by editing the class-level variables:
-
-```python
-# strategies/sma_cross.py
-class SmaCross(Strategy):
-    n1 = 20              # fast SMA period
-    n2 = 50              # slow SMA period
-    stop_loss_pct = 0.02 # 2% stop-loss
+```bash
+rm data/BTCUSDT_1d.csv
 ```
